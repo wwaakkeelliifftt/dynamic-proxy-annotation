@@ -3,41 +3,29 @@ package dev.androidbroadcast.analyticsproxy
 import java.lang.reflect.Proxy
 import kotlin.properties.Delegates
 
-class AnalyticsProxy private constructor(
-    private val analyticsTracker: AnalyticsTracker,
-    private val cached: Boolean
-) {
+inline fun <reified T: Any> AnalyticsProxy.create(): T {
+    return this.create(T::class.java)
+}
+
+class AnalyticsProxy private constructor(private val analyticsTracker: AnalyticsTracker) {
 
     @Suppress("UNCHECKED_CAST")
     fun <T : Any> create(clazz: Class<T>): T {
         return Proxy.newProxyInstance(
             clazz.classLoader,
             arrayOf(clazz),
-            AnalyticsProxyInvocationHandler(analyticsTracker, cached)
+            AnalyticsProxyInvocationHandler(analyticsTracker)
         ) as T
     }
 
     class Builder {
+        private var analyticsTracker by Delegates.notNull<AnalyticsTracker>()
 
-        private var analyticsTracker: AnalyticsTracker by Delegates.notNull()
-        private var cached = true
-
-        fun analyticsTracker(analyticsTracker: AnalyticsTracker): Builder {
-            this.analyticsTracker = analyticsTracker
+        fun analyticsTracker(tracker: AnalyticsTracker): Builder {
+            this.analyticsTracker = tracker
             return this
         }
 
-        fun cached(cached: Boolean): Builder {
-            this.cached = cached
-            return this
-        }
-
-        fun build(): AnalyticsProxy {
-            return AnalyticsProxy(analyticsTracker, cached)
-        }
+        fun build(): AnalyticsProxy = AnalyticsProxy(analyticsTracker)
     }
-}
-
-inline fun <reified T : Any> AnalyticsProxy.create(): T {
-    return create(T::class.java)
 }
